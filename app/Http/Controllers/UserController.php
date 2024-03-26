@@ -24,6 +24,8 @@ class UserController extends Controller
     //membuat akun
     public function register(Request $request)
     {
+        try{
+
         $username= $request->input('username');
         $email = $request->input('email');
         $password = Hash::make($request->input('passowrd'));
@@ -35,20 +37,11 @@ class UserController extends Controller
             'password' => $password,
             'role'=> $request->$role
         ]);
-
-        if($register){
-            return response()->json([
-                'succes' => true,
-                'massage'=> 'Register succes!',
-                'data' => $register
-            ], 201);
-        }else{
-            return response()->json([
-                'succes' => false,
-                'massage'=> 'Register fail!',
-                'data' => ''
-            ], 400);
+        return ApiFormatter::sendResponse(200, true, 'Successfully Create A User Data', $register);
+        }catch(\Exception $e){
+            return ApiFormatter::sendResponse(400, false, $e->getMessage());
         }
+       
     }
 
     //melihat data sesuai id
@@ -169,13 +162,13 @@ class UserController extends Controller
     public function login(Request $request)
     {
         try{
-            $ths->Validate($request, [
-                'email'->'required',
-                'password'->'required',
+            $this->validate($request, [
+                'email' => 'required',
+                'password' => 'required',
             ],[
-                'email.required' => 'Email harus di isi'
-                'passsword.required' => 'Password harus di isi'
-                'password.main' => 'Password minimla 8 karakter'
+                'email.required' => 'Email harus di isi',
+                'password.required' => 'Password harus di isi',
+                'password.min' => 'Password minimal 8 karakter',
             ]);
 
             $user = User::where('email', $request->email)->first();
@@ -191,13 +184,41 @@ class UserController extends Controller
                     $generateToken = bin2hex(random_bytes(40));
 
                     $user->update([
-                        'token' = $generateToken
+                        'token' => $generateToken
                     ]);
-                    return ApiFormatter::sendResponse(200, true , 'Login Succdssfully', $user);
+                    return ApiFormatter::sendResponse(200, 'Login Succdssfully', $user);
                 }
             }
         }catch(\Exception $e){
             return ApiFormatter::sendResponse(400, false , $e->getMessage());
+        }
+    }
+
+    public function logout(Request $request)
+    {
+        try{
+            $this->validate($request, [
+                'email' => 'required',
+                
+            ]);
+
+            $user = User::where('email', $request->email)->first();
+
+            if(!$user) {
+                return ApiFormatter::sendResponse(400, false , 'Login Failed! User Dosent Exist');
+            }else{
+                if(!$user->token){
+                    return ApiFormatter::sendResponse(400, false , 'Logout Failed! User Doesnt Login Scine');
+                }else{
+                    $logout = $user->update(['token' => null]);
+
+                    if($logout){
+                    return ApiFormatter::sendResponse(200, 'Logout Succdssfully');
+                    }
+                }
+            }
+        }catch(\Exception $e){
+            return ApiFormatter::sendResponse(400, $e->getMessage());
         }
     }
 }

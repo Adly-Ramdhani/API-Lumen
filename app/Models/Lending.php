@@ -9,6 +9,7 @@ class Lending extends Model
 {
     use softDeletes;
     protected $fillable = ["stuff_id", "date_time", "name", "user_id", "notes", "total_stuff"];
+    protected $table = 'pengembalian';
 
     public function user()
     {

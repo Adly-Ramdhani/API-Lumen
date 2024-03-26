@@ -18,7 +18,7 @@ class StuffController extends Controller
         try{
             $data = Stuff::all()->toArray();
 
-            return ApiFormatter::sendResponse(200, 'success', $data);
+            return ApiFormatter::sendResponse(200,'success', $data);
         }catch(\Exception $err){
             return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage);
         }

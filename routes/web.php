@@ -17,9 +17,10 @@ $router->get('/', function () use ($router) {
     return $router->app->version();
 });
 
-$router->post('/login', 'UserController@logib');
+$router->post('/login', 'UserController@login');
+$router->get('/logout', 'UserController@logout');
  
-$router->group(['prefix' => 'stuff/','middlewar' => 'Auth'], function() use ($router){
+$router->group(['prefix' => 'stuff/','middleware' => 'auth'], function() use ($router){
     //static routes
     $router->get('/data', 'StuffController@index');
     $router->post('/', 'StuffController@store');
@@ -34,7 +35,7 @@ $router->group(['prefix' => 'stuff/','middlewar' => 'Auth'], function() use ($ro
 });
 
 
-$router->group(['prefix' => 'user/','middlewar' => 'Auth'], function() use ($router){
+$router->group(['prefix' => 'user/','middleware' => 'auth'], function() use ($router){
     $router->get('/data', 'UserController@index');
     $router->post('/register','UserController@register');
     $router->post('/', 'UserController@store');
@@ -50,6 +51,11 @@ $router->group(['prefix' => 'lending'], function() use ($router){
     $router->get('/data', 'LendingController@index');
     $router->post('/', 'LendingController@store');
     $router->get('/{id}','LendingController@show');
+});
+
+$router->group(['prefix' => 'inbound-stuff/','middleware' => 'auth'], function() use ($router){
+    $router->post('/store', 'InboundStuffController@store');
+    
 });
 
 $router->group(['prefix' => 'stuffstock'], function() use ($router){
