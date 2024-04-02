@@ -7,6 +7,9 @@ use App\Models\InboundStuff;
 use App\Models\StuffStock;
 use App\Models\Stuff;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\App;
+
 
 class InboundStuffController extends Controller
 {
@@ -15,9 +18,18 @@ class InboundStuffController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(request $request)
     {
-        //
+        try{
+            if($request->filter_id){
+               $data = InboundStuff::where('stuff_id', $request->filter_id)->with('stuff','stuff.stuffStock')->get();
+            }else{
+                $data = InboundStuff::all();
+            }
+            return Apiformatter::sendResponse(200, 'succes', $data);
+           }catch(\Exception $err){
+            return ApiFormatter::sendResponse(400, 'bad request',$err->getMessage());
+           }
     }
 
     /**
@@ -136,8 +148,77 @@ class InboundStuffController extends Controller
      * @param  \App\Models\InboundStuff  $inboundStuff
      * @return \Illuminate\Http\Response
      */
-    public function destroy(InboundStuff $inboundStuff)
+    public function destroy(InboundStuff $inboundStuff, $id)
     {
-        //
+        try{
+            $checkProses= InboundStuff::where('id', $id)->delete();
+
+            return ApiFormatter::sendResponse(200, 'success', 'Data stuff berhasil di hapus');
+        }catch(\Exception $err){
+            return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage());
+        }
     }
-}
+
+    public function trash()
+    {
+        try{
+            $data= InboundStuff::onlyTrashed()->get();
+
+            return ApiFormatter::sendResponse(200, 'success', $data);
+        }catch(\Exception $err){
+            return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage());
+        }
+    }
+
+    public function restore(InboundStuff $inboundStuff, $id)
+    {
+        try{
+            $checkProses = InboundStuff::onlyTrashed()->where('id', $id)->restore();
+    
+            if($checkProses) {
+                $data = InboundStuff::find($id);
+                return ApiFormatter::sendResponse(200, 'success', $data);
+            }else{
+                return ApiFormatter::sendResponse(400, 'bad request', 'Gagal mengembalikan data!');
+            }
+        }catch(\Exception $err){
+            return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage());
+        }
+    }
+
+    
+    public function deletePermanent(InboundStuff $inboundStuff, Request $request, $id)
+    {
+        try {
+            $getInbound = InboundStuff::onlyTrashed()->where('id',$id)->first();
+
+            unlink(base_path('public/proff/'.$getInbound->proff_file));
+            // Menghapus data dari database
+            $checkProses = InboundStuff::where('id', $id)->forceDelete();
+    
+            // Memberikan respons sukses
+            return ApiFormatter::sendResponse(200, 'success', 'Data inbound-stuff berhasil dihapus permanen');
+        } catch(\Exception $err) {
+            // Memberikan respons error jika terjadi kesalahan
+            return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage());
+        }
+    }   
+    
+    private function deleteAssociatedFile(InboundStuff $inboundStuff)
+    {
+        // Mendapatkan jalur lengkap ke direktori public
+        $publicPath = $_SERVER['DOCUMENT_ROOT'] . '/public/proff';
+
+    
+        // Menggabungkan jalur file dengan jalur direktori public
+         $filePath = public_path('proff/'.$inboundStuff->proff_file);
+    
+        // Periksa apakah file ada
+        if (file_exists($filePath)) {
+            // Hapus file jika ada
+            unlink(base_path($filePath));
+        }
+    }
+             
+ } 
+

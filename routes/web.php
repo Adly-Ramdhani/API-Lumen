@@ -54,13 +54,19 @@ $router->group(['prefix' => 'lending'], function() use ($router){
 });
 
 $router->group(['prefix' => 'inbound-stuff/','middleware' => 'auth'], function() use ($router){
+    $router->get('/data', 'InboundStuffController@index');
     $router->post('/store', 'InboundStuffController@store');
+    $router->get('/restore/{id}', 'InboundStuffController@restore');
+    $router->delete('/delete/{id}', 'InboundStuffController@destroy');
+    $router->delete('/permanent/{id}', 'InboundStuffController@deletePermanent');
+    $router->get('/trash', 'InboundStuffController@trash');
     
 });
 
-$router->group(['prefix' => 'stuffstock'], function() use ($router){
+$router->group(['prefix' => 'stuff-Stock','middleware' => 'auth'], function() use ($router){
     $router->get('/data', 'StuffStockController@index');
-    $router->post('/', 'StuffStockController@store');
+    $router->post('/store', 'StuffStockController@store');
+    $router->post('add-Stock/{id}', 'StuffStockController@addStock');
 });
 
 
