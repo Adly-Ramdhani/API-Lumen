@@ -21,7 +21,7 @@ class LendingController extends Controller
 
             return ApiFormatter::sendResponse(200, 'succes', $data);
         }catch(\Exception $err){
-            return ApiFormatter::sendResponse(400, 'bad request', $derr->getMassage);
+            return ApiFormatter::sendResponse(400, 'bad request',$err->getMessage());
         }
     }
 

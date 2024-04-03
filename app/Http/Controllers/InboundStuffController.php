@@ -150,14 +150,38 @@ class InboundStuffController extends Controller
      */
     public function destroy(InboundStuff $inboundStuff, $id)
     {
-        try{
-            $checkProses= InboundStuff::where('id', $id)->delete();
-
-            return ApiFormatter::sendResponse(200, 'success', 'Data stuff berhasil di hapus');
-        }catch(\Exception $err){
+        try {
+            $checkProses = InboundStuff::where('id', $id)->first();
+    
+            if ($checkProses) {
+                $stuffId = $checkProses->stuff_id;
+                $totalInbound = $checkProses->total;
+                $checkProses->delete();
+    
+                $dataStock = StuffStock::where('stuff_id', $checkProses->stuff_id)->first();
+                
+                if ($dataStock) {
+                    $total_available = (int)$dataStock->total_available - (int)$totalInbound;
+                    $minusTotalStock = $dataStock->update(['total_available' => $total_available]);
+    
+                    if ($minusTotalStock) {
+                        $updateStufAndInbound = Stuff::where('id', $stuffId)->with('inboundStuffs', 'stuffStock')->first();
+                        return ApiFormatter::sendResponse(200, 'success', $updateStufAndInbound);
+                    }
+                } else {
+                    // Tangani jika data stok tidak ditemukan
+                    return ApiFormatter::sendResponse(404, 'not found', 'Data stok stuff tidak ditemukan');
+                }
+            } else {
+                // Tangani jika data InboundStuff tidak ditemukan
+                return ApiFormatter::sendResponse(404, 'not found', 'Data InboundStuff tidak ditemukan');
+            }
+        } catch (\Exception $err) {
+            // Tangani kesalahan
             return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage());
         }
     }
+    
 
     public function trash()
     {
@@ -172,16 +196,36 @@ class InboundStuffController extends Controller
 
     public function restore(InboundStuff $inboundStuff, $id)
     {
-        try{
+        try {
+            // Memulihkan data dari tabel 'inbound_stuffs'
             $checkProses = InboundStuff::onlyTrashed()->where('id', $id)->restore();
     
-            if($checkProses) {
-                $data = InboundStuff::find($id);
-                return ApiFormatter::sendResponse(200, 'success', $data);
-            }else{
+            if ($checkProses) {
+                // Mendapatkan data yang dipulihkan
+                $restoredData = InboundStuff::find($id);
+    
+                // Mengambil total dari data yang dipulihkan
+                $totalRestored = $restoredData->total;
+    
+                // Mendapatkan stuff_id dari data yang dipulihkan
+                $stuffId = $restoredData->stuff_id;
+    
+                // Memperbarui total_available di tabel 'stuff_stocks'
+                $stuffStock = StuffStock::where('stuff_id', $stuffId)->first();
+                
+                if ($stuffStock) {
+                    // Menambahkan total yang dipulihkan ke total_available
+                    $stuffStock->total_available += $totalRestored;
+    
+                    // Menyimpan perubahan pada stuff_stocks
+                    $stuffStock->save();
+                }
+    
+                return ApiFormatter::sendResponse(200, 'success', $restoredData);
+            } else {
                 return ApiFormatter::sendResponse(400, 'bad request', 'Gagal mengembalikan data!');
             }
-        }catch(\Exception $err){
+        } catch (\Exception $err) {
             return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage());
         }
     }
