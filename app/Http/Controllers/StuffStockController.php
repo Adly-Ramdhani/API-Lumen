@@ -4,10 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Helpers\ApiFormatter;
 use App\Models\StuffStock;
+use App\Models\Stuff;
 use Illuminate\Http\Request;
 
 class StuffStockController extends Controller
 {
+    public function __construct()
+   {
+    $this->middleware('auth:api');
+   }
+   
     /**
      * Display a listing of the resource.
      *
@@ -131,7 +137,7 @@ class StuffStockController extends Controller
                 if ($addStock) {
                     $getStuffStockAdded = StuffStock::where('id', $id)->with('stuff')->first();
 
-                    return ApiFormatter::sendResponse(200, true, 'Successfully Add A Stock Of Stuff Stock Data', $getStuffStockAdded);
+                    return ApiFormatter::sendResponse(200,'Successfully Add A Stock Of Stuff Stock Data', $getStuffStockAdded);
                 }
             }
             } catch (\Exception $err) {

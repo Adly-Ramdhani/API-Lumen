@@ -9,6 +9,12 @@ use App\Models\User;
 
 class UserController extends Controller
 {
+
+    public function __construct()
+   {
+    $this->middleware('auth:api');
+   }
+
     //melihata data
     public function index()
     {
@@ -59,6 +65,17 @@ class UserController extends Controller
             return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage());
         }
         
+    }
+
+    public function trash()
+    {
+        try {
+            $data = User::onlyTrashed() -> get();
+
+            return ApiFormatter::sendResponse(200, 'success', $data);
+        } catch (\Exception $err) {
+            return ApiFormatter::sendResponse(400, 'bad request', $err -> getMessage());
+        }
     }
 
     //untuk mengembalikan data sesuai id
@@ -112,17 +129,25 @@ class UserController extends Controller
             $this->validate($request, [
                 'username' => 'required',
                 'email' => 'required',
-                'password' => 'required',
+                'role' => 'required',
                 
             ]);
-
+           
+            if($request->password){
             $checkProses = User::where('id', $id)->update([
                 'username' => $request->username,
                 'email' => $request->email,
+                'role' => $request->role,
                 'password' => hash::make($request->password)
                 
-
             ]);
+        }else{
+            $checkProses = User::where('id', $id)->update([
+                'username' => $request->username,
+                'email' => $request->email,
+                'role' => $request->role,  
+            ]);
+        }
 
             if($checkProses) {
                 $data = User::find($id);

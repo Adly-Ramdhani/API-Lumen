@@ -6,8 +6,15 @@ use App\Helpers\ApiFormatter;
 use App\Models\stuff;
 use Illuminate\Http\Request;
 
+
 class StuffController extends Controller
 {
+
+    public function __construct()
+   {
+    $this->middleware('auth:api');
+   }
+
     /**
      * Display a listing of the resource.
      *
@@ -16,11 +23,11 @@ class StuffController extends Controller
     public function index()
     {
         try{
-            $data = Stuff::all()->toArray();
+            $data = Stuff::with('stuffStock', 'inboundStuffs', 'Lendings')->get();
 
             return ApiFormatter::sendResponse(200,'success', $data);
         }catch(\Exception $err){
-            return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage);
+            return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage());
         }
     }
 
@@ -68,7 +75,7 @@ class StuffController extends Controller
     public function show(stuff $stuff, $id)
     {
         try{
-            $data = Stuff::where('id', $id)->first();
+            $data = Stuff::where('id', $id)->with('stuffStok','inboundStuff','lendings')->first();
 
             if(is_null($data)){
                 return ApiFormatter::sendResponse(400, 'bad request', 'Data not found');
@@ -140,17 +147,27 @@ class StuffController extends Controller
      * @param  \App\Models\stuff  $stuff
      * @return \Illuminate\Http\Response
      */
-    public function destroy(stuff $stuff, $id)
+    public function destroy(Stuff $stuff, $id)
     {
-        try{
-            $checkProses= Stuff::where('id', $id)->delete();
-
-            return ApiFormatter::sendResponse(200, 'success', 'Data stuff berhasil di hapus');
-        }catch(\Exception $err){
-            return ApiFormatter::sendResponse(400, 'bad request', $err->getMessage());
+        try {
+            $checkProses = Stuff::where('id', $id)->first();
+    
+            if (!$checkProses) {
+                return ApiFormatter::sendResponse(404, 'not found', 'Data stuff tidak ditemukan');
+            }
+    
+            if ($checkProses->inboundStuffs()->exists() || $checkProses->stuffStock()->exists() || $checkProses->lendings()->exists()) {
+                return ApiFormatter::sendResponse(400, 'bad request', 'Tidak dapat menghapus data stuff, sudah terdapat inbound stuff');
+            } else {
+                $checkProses->delete();
+                return ApiFormatter::sendResponse(200, 'success', 'Data stuff berhasil dihapus');
+            }
+    
+        } catch (\Exception $err) {
+            return ApiFormatter::sendResponse(500, 'internal server error', $err->getMessage());
         }
     }
-
+    
     public function trash()
     {
         try{

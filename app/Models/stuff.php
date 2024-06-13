@@ -11,14 +11,14 @@ class stuff extends Model
     protected $fillable = ["name", "category"];
 
 
-    public function stuffStcock()
+    public function stuffStock()
     {
-        return $this->hasOne(stuffStcoc::class);
+        return $this->hasOne(StuffStock::class);
     }
 
     public function inboundStuffs()
     {
-        return $this->hasMany(InboundStuffs::class);
+        return $this->hasMany(InboundStuff::class);
     }
 
     public function lendings()
